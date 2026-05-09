@@ -56,13 +56,25 @@ const AssessmentPage = () => {
     });
   };
 
-  const saveToHistory = (predictionData) => {
+  const getApiUrl = () => {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    if (protocol === 'capacitor:' || protocol === 'file:') {
+      return 'https://shifasense-ai.vercel.app/api';
+    }
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    }
+    return '/api';
+  };
+
+  const saveToHistory = (predictionData, inputData) => {
     const history = JSON.parse(localStorage.getItem('shifasense_history') || '[]');
     const newEntry = {
       id: `ASSESS-${Date.now()}`,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2024' }),
-      data: formData,
-      prediction: predictionData || { score: 85, risk_level: 'Healthy' },
+      date: new Date().toISOString(),
+      data: inputData || formData,
+      prediction: predictionData,
       status: 'Completed'
     };
     localStorage.setItem('shifasense_history', JSON.stringify([newEntry, ...history]));
@@ -71,35 +83,46 @@ const AssessmentPage = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      // Use the same production-aware URL logic as RiskForm.jsx
-      const isProduction = import.meta.env.MODE === 'production' || window.location.hostname !== 'localhost' || (window.location.protocol === 'https:' && !window.location.hostname.includes('127.0.0.1'));
-      const apiUrl = isProduction ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:8000');
-      
-      // Map the simplified AssessmentPage fields to the Deep Risk Backend format
+      const apiUrl = getApiUrl();
       const numericData = {
-        Age: 30, // Default for standard assessment
+        Age: 30,
         Sleep_Hours: formData.sleepDuration,
-        Water_Liters: formData.waterIntake * 0.25, // Convert glasses to Liters
+        Water_Liters: formData.waterIntake * 0.25,
         Activity_Mins: formData.physicalActivity,
-        Stress_Level: formData.stressLevel || 5,
-        BMI: 24, // Default for standard assessment
-        Food_Habits: 'Mostly Home Cooked', // Default
-        Smoking_Habit: 'Non-smoker' // Default
+        Stress_Level: Number(formData.stressLevel) || 5,
+        BMI: 24,
+        Food_Habits: 'Mostly Home Cooked',
+        Smoking_Habit: 'Non-smoker'
       };
-      
-      const response = await axios.post(`${apiUrl}/predict-risk`, numericData);
-      saveToHistory(response.data);
+      const response = await axios.post(`${apiUrl}/predict-risk`, numericData, {
+        timeout: 15000,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      saveToHistory(response.data, formData);
       setTimeout(() => {
         navigate('/result', { state: { data: formData, prediction: response.data } });
       }, 2500);
     } catch (err) {
-      console.error("Analysis failed:", err);
-      // Fallback for demo purposes if backend fails
+      console.error('Analysis failed:', err);
+      // Compute a simple local fallback so user sees something real
+      const stress = Number(formData.stressLevel) || 5;
+      const sleep = formData.sleepDuration || 7;
+      const activity = formData.physicalActivity || 30;
+      const localRisk = Math.max(0, Math.min(100,
+        10 + (2.0 * stress) + (-0.5 * sleep) + (-0.01 * activity) + (-0.2 * (formData.waterIntake * 0.25))
+      ));
       const fallbackData = {
-        predicted_risk_percentage: 35.5,
-        ai_coaching: "Your metrics show a stable baseline, but increasing your water intake and activity will further optimize your neural recovery cycles."
+        score: Math.round(100 - localRisk),
+        predicted_risk_percentage: Math.round(localRisk * 10) / 10,
+        risk_level: localRisk > 70 ? 'High Risk Pattern' : (localRisk > 40 ? 'Moderate Variance' : 'Optimal Status'),
+        ai_coaching: localRisk > 70
+          ? 'Your data suggests high physiological stress. Prioritize sleep, reduce stress, and consult a healthcare professional.'
+          : localRisk > 40
+            ? 'Moderate risk detected. Focus on improving sleep consistency and increasing daily activity.'
+            : 'Your metrics indicate a healthy baseline. Keep maintaining your current routines.',
+        insights: ['Based on local calculation — connect to internet for full AI analysis.']
       };
-      saveToHistory(fallbackData);
+      saveToHistory(fallbackData, formData);
       setTimeout(() => {
         navigate('/result', { state: { data: formData, prediction: fallbackData } });
       }, 2500);
@@ -196,8 +219,13 @@ const AssessmentPage = () => {
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
                   <button 
                     key={num}
+                    type="button"
                     onClick={() => handleInputChange('stressLevel', num)}
-                    className={`h-12 rounded-xl text-sm font-bold transition-all border ${formData.stressLevel === num ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white text-slate-400 border-slate-200 hover:border-primary/30'}`}
+                    className={`h-12 rounded-xl text-sm font-bold transition-all border-2 ${
+                      formData.stressLevel === num
+                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105'
+                        : 'bg-white text-slate-400 border-slate-200 hover:border-primary hover:text-primary'
+                    }`}
                   >
                     {num}
                   </button>

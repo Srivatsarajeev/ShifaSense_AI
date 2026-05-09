@@ -41,17 +41,18 @@ const Dashboard = () => {
   
   // Generate real graph data from history
   const chartData = history.slice(0, 7).reverse().map((item) => {
-    const d = new Date(item.date);
-    return { name: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()], val: item.prediction.score };
+    const val = item?.prediction?.score || Math.round(100 - (item?.prediction?.predicted_risk_percentage || 50));
+    const d = item.date ? new Date(item.date) : new Date();
+    return { name: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()], val };
   });
   while (chartData.length < 7) {
     chartData.unshift({ name: '-', val: 0 });
   }
 
   const metabolicData = chartData;
-  const riskLevel = latest?.prediction?.riskLevel || "N/A";
-  const recentSummary = latest?.prediction?.summary || "No recent AI analysis available. Please complete an assessment.";
-  const lastUpdated = latest ? new Date(latest.date).toLocaleDateString() + ' ' + new Date(latest.date).toLocaleTimeString() : "Never";
+  const riskLevel = latest?.prediction?.risk_level || latest?.prediction?.riskLevel || 'N/A';
+  const recentSummary = latest?.prediction?.ai_coaching || 'No recent AI analysis available. Please complete an assessment.';
+  const lastUpdated = latest?.date ? new Date(latest.date).toLocaleString() : 'Never';
 
   return (
     <div className="space-y-10">
@@ -198,8 +199,16 @@ const Dashboard = () => {
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">Core Metrics</div>
               <div className="space-y-8">
                  {[
-                   { label: 'Sleep Reported', strength: latest?.data?.sleepDuration ? `${latest.data.sleepDuration} hours` : 'N/A', val: latest?.data?.sleepDuration ? Math.min(latest.data.sleepDuration * 10, 100) : 0 },
-                   { label: 'Stress Level', strength: latest?.data?.stressLevel ? `${latest.data.stressLevel}/10` : 'N/A', val: latest?.data?.stressLevel ? (10 - (typeof latest.data.stressLevel === 'number' ? latest.data.stressLevel : 5)) * 10 : 0 }
+                   { 
+                     label: 'Sleep Reported', 
+                     strength: latest?.data?.sleepDuration ? `${latest.data.sleepDuration} hrs` : 'N/A', 
+                     val: latest?.data?.sleepDuration ? Math.min((latest.data.sleepDuration / 12) * 100, 100) : 0 
+                   },
+                   { 
+                     label: 'Stress Level', 
+                     strength: latest?.data?.stressLevel ? `${latest.data.stressLevel}/10` : 'N/A', 
+                     val: latest?.data?.stressLevel ? Math.max(0, (10 - Number(latest.data.stressLevel)) * 10) : 0 
+                   }
                  ].map((c, i) => (
                    <div key={i} className="space-y-2">
                       <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
