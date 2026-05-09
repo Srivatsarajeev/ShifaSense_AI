@@ -10,6 +10,173 @@ import {
 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 
+// FIX 3: Dashboard that displays real savedResults data
+const DashboardView = ({ savedResults, setView, setStep }) => {
+  if (savedResults.length === 0) {
+    return (
+      <div style={{ maxWidth: '480px', margin: '60px auto', background: '#F8FAFC', border: '1px solid #E5E7EB', borderRadius: '16px', padding: '48px 32px', textAlign: 'center' }}>
+        <div style={{ fontSize: '60px', marginBottom: '16px' }}>📋</div>
+        <h2 style={{ fontFamily: 'Poppins', fontWeight: 600, fontSize: '20px', color: '#111827', margin: '0 0 8px' }}>No assessments yet</h2>
+        <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: '14px', color: '#6B7280', maxWidth: '320px', margin: '0 auto 24px', lineHeight: 1.6 }}>
+          Complete your first health assessment to see your personal health intelligence dashboard.
+        </p>
+        <button
+          onClick={() => { setView('assessment'); setStep(1); }}
+          className="btn-primary"
+        >
+          Start Health Assessment →
+        </button>
+      </div>
+    );
+  }
+
+  const latest = savedResults[0];
+  const totalAssessments = savedResults.length;
+  const consistency = totalAssessments >= 3 ? 'Improving' : totalAssessments >= 1 ? 'Building' : 'Learning';
+
+  const chartData = savedResults.slice().reverse().map(r => ({
+    date: r.displayDate,
+    score: r.healthScore
+  }));
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Health Dashboard</h1>
+          <p className="text-slate-500 font-medium mt-1">Last updated {latest.displayDate} at {latest.displayTime}</p>
+        </div>
+        <button onClick={() => { setView('assessment'); setStep(1); }} className="btn-primary">New Assessment</button>
+      </div>
+
+      {/* Score Card */}
+      <div className="grid md:grid-cols-3 gap-6">
+        <div className="shifa-card p-8 text-center flex flex-col items-center">
+          <div className="relative w-[160px] h-[160px] flex items-center justify-center mb-4">
+            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r="68" fill="none" stroke="#E5E7EB" strokeWidth="8" />
+              <circle cx="80" cy="80" r="68" fill="none" stroke={latest.riskColor} strokeWidth="8"
+                strokeDasharray="427"
+                strokeDashoffset={427 - (427 * latest.healthScore) / 100}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 1.5s ease-out' }}
+              />
+            </svg>
+            <div className="relative z-10 text-center">
+              <div className="text-4xl font-bold" style={{ color: latest.riskColor }}>{latest.healthScore}</div>
+              <div className="text-xs text-slate-400 font-medium">/ 100</div>
+            </div>
+          </div>
+          <div className="px-4 py-1.5 rounded-full text-white font-bold text-xs uppercase" style={{ backgroundColor: latest.riskColor }}>{latest.riskLevel}</div>
+        </div>
+
+        <div className="shifa-card p-6 space-y-4">
+          <h3 className="font-bold text-slate-900 text-sm uppercase tracking-widest">Overview</h3>
+          {[
+            { label: 'Consistency', val: consistency },
+            { label: 'Total Assessments', val: totalAssessments },
+            { label: 'Latest Risk', val: latest.riskLevel }
+          ].map((item, i) => (
+            <div key={i} className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <span className="text-sm text-slate-500 font-medium">{item.label}</span>
+              <span className="text-sm font-bold text-slate-900">{item.val}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="shifa-card p-6 space-y-4">
+          <h3 className="font-bold text-slate-900 text-sm uppercase tracking-widest">Core Inputs</h3>
+          {[
+            { label: 'Sleep', val: `${latest.inputs.sleep}h`, pct: (latest.inputs.sleep / 12) * 100, color: '#6366F1' },
+            { label: 'Stress', val: `${latest.inputs.stress}/10`, pct: latest.inputs.stress * 10, color: '#EF4444' },
+            { label: 'Activity', val: `${latest.inputs.activity} mins`, pct: Math.min((latest.inputs.activity / 60) * 100, 100), color: '#10B981' }
+          ].map((m, i) => (
+            <div key={i} className="space-y-1">
+              <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <span>{m.label}</span><span>{m.val}</span>
+              </div>
+              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${m.pct}%`, backgroundColor: m.color }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Score History */}
+      {savedResults.length > 1 ? (
+        <div className="shifa-card p-6">
+          <h3 className="font-bold text-slate-900 mb-4">Score History</h3>
+          <div style={{ height: '200px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94A3B8' }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#94A3B8' }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="score" stroke="#2563EB" strokeWidth={2} dot={{ fill: '#2563EB', r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      ) : (
+        <div className="shifa-card p-6 text-center">
+          <div className="text-4xl font-bold mb-2" style={{ color: latest.riskColor }}>{latest.healthScore}</div>
+          <p className="text-slate-400 text-sm">Take more assessments to see your score trend</p>
+        </div>
+      )}
+
+      {/* AI Summary */}
+      {latest.summary && (
+        <div className="shifa-card p-6">
+          <h3 className="font-bold text-slate-900 mb-3">AI Analysis Summary</h3>
+          <p className="text-slate-600 leading-relaxed">{latest.summary}</p>
+        </div>
+      )}
+
+      {/* Recommendations */}
+      {latest.recommendations && latest.recommendations.length > 0 && (
+        <div className="shifa-card p-6">
+          <h3 className="font-bold text-slate-900 mb-4">Personalized Recommendations</h3>
+          <div className="space-y-3">
+            {latest.recommendations.map((rec, i) => (
+              <div key={i} className="flex gap-3 items-start p-3 bg-slate-50 rounded-xl">
+                <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">{i + 1}</div>
+                <p className="text-sm text-slate-700 font-medium">{rec}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Assessment History */}
+      <div className="shifa-card p-6">
+        <h3 className="font-bold text-slate-900 mb-4">Assessment History</h3>
+        <div className="space-y-3">
+          {savedResults.slice(0, 5).map((entry, i) => (
+            <div key={entry.id} className="flex items-center gap-4 p-3 rounded-xl border border-slate-100 hover:border-blue-100 transition-all">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ backgroundColor: entry.riskColor }}>
+                {entry.healthScore}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold text-slate-900">{entry.riskLevel}</div>
+                <div className="text-xs text-slate-400">{entry.displayDate} · {entry.displayTime}</div>
+              </div>
+              <span className="text-xs font-bold text-blue-600 border border-blue-200 px-3 py-1 rounded-full">
+                #{i + 1}
+              </span>
+            </div>
+          ))}
+          {savedResults.length > 5 && (
+            <p className="text-center text-sm text-blue-600 font-medium pt-2">+ {savedResults.length - 5} more reports</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const COLORS = {
   primary: '#2563EB',
   success: '#10B981',
@@ -543,7 +710,7 @@ const AssessmentView = ({ step, setStep, formData, setFormData, handleAnalyze })
   );
 };
 
-const ResultsView = ({ result, formData, backendData }) => {
+const ResultsView = ({ result, formData, backendData, setView, setSavedResults, saveSuccess, setSaveSuccess }) => {
   const [toast, setToast] = useState('');
   const [completed, setCompleted] = useState({});
   const [shareUrl, setShareUrl] = useState('');
@@ -712,7 +879,46 @@ const ResultsView = ({ result, formData, backendData }) => {
 
       <div className="flex flex-col items-center gap-4 pt-8">
          <div className="flex flex-wrap justify-center gap-4">
-           <button className="btn-primary flex items-center gap-2">Save to Dashboard</button>
+           <button
+             onClick={() => {
+               if (!result) return;
+               const entry = {
+                 id: crypto.getRandomValues(new Uint32Array(1))[0].toString(36).toUpperCase(),
+                 savedAt: new Date().toISOString(),
+                 displayDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+                 displayTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                 name: result.name || formData.name,
+                 age: formData.age,
+                 healthScore: result.healthScore,
+                 riskLevel: result.riskLevel,
+                 riskColor: result.riskColor,
+                 summary: result.summary,
+                 recommendations: result.recommendations,
+                 riskFactors: result.riskFactors,
+                 sleepScore: result.sleepScore,
+                 stressScore: result.stressScore,
+                 activityScore: result.activityScore,
+                 inputs: {
+                   sleep: formData.sleep,
+                   stress: formData.stress,
+                   hydration: formData.hydration,
+                   screenTime: formData.screenTime,
+                   activity: formData.activity,
+                   steps: formData.steps,
+                   heartRate: formData.heartRate
+                 }
+               };
+               setSavedResults(prev => [entry, ...prev]);
+               setSaveSuccess(true);
+               setTimeout(() => setSaveSuccess(false), 2500);
+               setTimeout(() => setView('dashboard'), 800);
+             }}
+             disabled={saveSuccess}
+             className="btn-primary flex items-center gap-2"
+             style={{ backgroundColor: saveSuccess ? '#10B981' : '#2563EB', transition: 'background-color 0.3s' }}
+           >
+             {saveSuccess ? '✓ Saved!' : 'Save to Dashboard'}
+           </button>
            <button onClick={() => {
               const el = document.getElementById('pdf-report');
               el.style.display = 'block';
@@ -809,6 +1015,46 @@ const LoadingOverlay = ({ loadingText, phase }) => (
   </div>
 );
 
+// FIX 4: Score accuracy correction
+const correctScore = (data, inputs) => {
+  let maxScore = 100;
+  if (inputs.sleep < 4) maxScore = Math.min(maxScore, 55);
+  if (inputs.sleep < 3) maxScore = Math.min(maxScore, 45);
+  if (inputs.stress >= 8) maxScore = Math.min(maxScore, 60);
+  if (inputs.stress >= 9) maxScore = Math.min(maxScore, 50);
+  if (inputs.steps < 1000) maxScore = Math.min(maxScore, 65);
+  if (inputs.heartRate > 100) maxScore = Math.min(maxScore, 65);
+  if (inputs.hydration < 3) maxScore = Math.min(maxScore, 70);
+  if (inputs.screenTime > 12) maxScore = Math.min(maxScore, 65);
+  let badFactors = 0;
+  if (inputs.sleep < 5) badFactors++;
+  if (inputs.stress > 7) badFactors++;
+  if (inputs.steps < 3000) badFactors++;
+  if (inputs.activity < 15) badFactors++;
+  if (inputs.hydration < 4) badFactors++;
+  if (inputs.screenTime > 10) badFactors++;
+  if (inputs.heartRate > 95) badFactors++;
+  if (badFactors >= 4) maxScore = Math.min(maxScore, 45);
+  if (badFactors >= 5) maxScore = Math.min(maxScore, 35);
+  let goodFactors = 0;
+  if (inputs.sleep >= 7) goodFactors++;
+  if (inputs.stress <= 3) goodFactors++;
+  if (inputs.steps >= 8000) goodFactors++;
+  if (inputs.activity >= 30) goodFactors++;
+  if (inputs.hydration >= 7) goodFactors++;
+  if (inputs.screenTime <= 5) goodFactors++;
+  if (inputs.heartRate >= 60 && inputs.heartRate <= 80) goodFactors++;
+  let minScore = 0;
+  if (goodFactors >= 5) minScore = 65;
+  if (goodFactors >= 6) minScore = 75;
+  if (goodFactors === 7) minScore = 82;
+  data.healthScore = Math.max(minScore, Math.min(maxScore, data.healthScore));
+  if (data.healthScore >= 70) { data.riskLevel = 'Healthy'; data.riskColor = '#10B981'; }
+  else if (data.healthScore >= 45) { data.riskLevel = 'Moderate Risk'; data.riskColor = '#F59E0B'; }
+  else { data.riskLevel = 'High Risk Pattern'; data.riskColor = '#EF4444'; }
+  return data;
+};
+
 const ShifaSenseApp = () => {
   const [view, setView] = useState('landing');
   const [isSharedView, setIsSharedView] = useState(false);
@@ -858,6 +1104,8 @@ const ShifaSenseApp = () => {
   const [backendData, setBackendData] = useState(null);
   const [statsData, setStatsData] = useState(null);
   const [result, setResult] = useState(null);
+  const [savedResults, setSavedResults] = useState([]);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Handle Shared URL
   useEffect(() => {
@@ -994,7 +1242,7 @@ const ShifaSenseApp = () => {
 
     setView('results'); setLoading(false);
 
-    // Run Claude API asynchronously
+    // FIX 1: Run Claude API with ONLY submitted fields — no smoking, alcohol, diet hallucination
     (async () => {
       try {
         const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1007,11 +1255,11 @@ const ShifaSenseApp = () => {
           },
           body: JSON.stringify({
             model: 'claude-3-haiku-20240307',
-            max_tokens: 1000,
-            system: "You are a health coach. Return ONLY valid JSON. No markdown.",
+            max_tokens: 1200,
+            system: "You are a health coach. Return ONLY valid JSON. No markdown. Never mention smoking, alcohol, diet, BMI, or any field not in the submitted data.",
             messages: [{ 
               role: 'user', 
-              content: `Based on this health profile, create a 7-day challenge plan. Each day has ONE small, specific, achievable task targeting their weakest health factors. Tasks must reference their actual numbers.\n\nProfile:\nSleep: ${formData.sleep}h (target: 7-8h)\nStress: ${formData.stress}/10\nSteps: ${formData.steps} (target: 10000)\nActivity: ${formData.activity} mins\nHydration: ${formData.hydration} glasses\n\nReturn JSON:\n{\n  "challenge_title": "string",\n  "focus_areas": ["string"],\n  "days": [\n    {\n      "day": 1,\n      "title": "string",\n      "task": "string",\n      "category": "sleep|stress|activity|hydration|screen",\n      "icon": "emoji"\n    }\n  ]\n}`
+              content: `Analyze this health profile and return a comprehensive JSON report.\n\nSUBMITTED DATA ONLY (use ONLY these 7 fields for all analysis):\nName: ${formData.name}\nAge: ${formData.age}\nSleep: ${formData.sleep}h\nStress: ${formData.stress}/10\nHydration: ${formData.hydration} glasses\nScreen Time: ${formData.screenTime}h\nPhysical Activity: ${formData.activity} mins\nDaily Steps: ${formData.steps}\nResting Heart Rate: ${formData.heartRate} bpm\n\nBase healthScore calculation strictly on these 7 inputs only.\nSleep < 5h is a major negative factor. Stress > 7 is a major negative factor.\nSteps < 3000 is a moderate negative factor. Activity < 15 mins is a moderate negative factor.\nHydration < 4 glasses is a moderate negative factor. Screen > 10h is a moderate negative factor.\nHeart rate > 100 is a moderate negative factor.\nA user with sleep=2, stress=2, hydration=3, steps=5000, activity=30, screen=1, hr=70 should score approximately 45-55 because sleep is critically low but other factors are decent. Never score above 70 when any single factor is critically bad.\n\nReturn JSON with these exact fields:\n{\n  "healthScore": number 0-100,\n  "riskLevel": "Healthy" | "Moderate Risk" | "High Risk Pattern",\n  "riskColor": "#10B981" | "#F59E0B" | "#EF4444",\n  "summary": "2-3 sentence analysis referencing actual submitted values only",\n  "riskFactors": [\n    "array of exactly 3 strings. Each must identify a risk from ONLY these submitted values: sleep (${formData.sleep}h), stress (${formData.stress}/10), hydration (${formData.hydration} glasses), screenTime (${formData.screenTime}h), activity (${formData.activity} mins), steps (${formData.steps}), heartRate (${formData.heartRate} bpm). Format: 'FieldName: specific observation (user value vs healthy benchmark)'. Example: 'Sleep: Only 4h vs recommended 7-8h'. NEVER mention smoking, alcohol, diet, or BMI."\n  ],\n  "recommendations": ["4-5 specific actionable items based ONLY on the 7 submitted fields"],\n  "sleepScore": number 0-100,\n  "stressScore": number 0-100,\n  "activityScore": number 0-100,\n  "challenges": {\n    "challenge_title": "string",\n    "focus_areas": ["string"],\n    "days": [{ "day": 1, "title": "string", "task": "string referencing actual submitted numbers", "category": "sleep|stress|activity|hydration|screen", "icon": "emoji" }]\n  }\n}`
             }]
           })
         });
@@ -1019,8 +1267,13 @@ const ShifaSenseApp = () => {
           const claudeJson = await claudeRes.json();
           const content = claudeJson.content[0].text;
           const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
-          const challengesData = JSON.parse(jsonStr);
-          setResult(prev => prev ? { ...prev, challenges: challengesData } : prev);
+          const parsed = JSON.parse(jsonStr);
+          // FIX 4: Apply score correction after parsing
+          const corrected = correctScore(parsed, formData);
+          const challenges = corrected.challenges || null;
+          delete corrected.challenges;
+          const validated = validateResult(corrected);
+          setResult(prev => prev ? { ...prev, ...validated, challenges } : prev);
         } else {
           throw new Error('Claude API error');
         }
@@ -1113,8 +1366,12 @@ const ShifaSenseApp = () => {
         )}
         {view === 'landing' && <LandingView setView={setView} setStep={setStep} />}
         {view === 'assessment' && <AssessmentView step={step} setStep={setStep} formData={formData} setFormData={setFormData} handleAnalyze={handleAnalyze} />}
-        {view === 'results' && <ResultsView result={result} formData={formData} backendData={backendData} />}
-        {view === 'dashboard' && <div className="max-w-7xl mx-auto py-16 px-6"><Dashboard /></div>}
+        {view === 'results' && <ResultsView result={result} formData={formData} backendData={backendData} setView={setView} setSavedResults={setSavedResults} saveSuccess={saveSuccess} setSaveSuccess={setSaveSuccess} />}
+        {view === 'dashboard' && (
+          <div className="max-w-7xl mx-auto py-16 px-6">
+            <DashboardView savedResults={savedResults} setView={setView} setStep={setStep} />
+          </div>
+        )}
       </main>
 
       {/* PDF Report Hidden Template */}
