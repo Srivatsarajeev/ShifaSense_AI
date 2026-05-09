@@ -198,8 +198,8 @@ const Dashboard = () => {
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">Core Metrics</div>
               <div className="space-y-8">
                  {[
-                   { label: 'Sleep Reported', strength: latest?.formData?.sleep ? `${latest.formData.sleep} hours` : 'N/A', val: latest?.formData?.sleep ? Math.min(latest.formData.sleep * 10, 100) : 0 },
-                   { label: 'Stress Level', strength: latest?.formData?.stress ? `${latest.formData.stress}/10` : 'N/A', val: latest?.formData?.stress ? (10 - latest.formData.stress) * 10 : 0 }
+                   { label: 'Sleep Reported', strength: latest?.data?.sleepDuration ? `${latest.data.sleepDuration} hours` : 'N/A', val: latest?.data?.sleepDuration ? Math.min(latest.data.sleepDuration * 10, 100) : 0 },
+                   { label: 'Stress Level', strength: latest?.data?.stressLevel ? `${latest.data.stressLevel}/10` : 'N/A', val: latest?.data?.stressLevel ? (10 - (typeof latest.data.stressLevel === 'number' ? latest.data.stressLevel : 5)) * 10 : 0 }
                  ].map((c, i) => (
                    <div key={i} className="space-y-2">
                       <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">

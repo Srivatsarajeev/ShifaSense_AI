@@ -32,7 +32,7 @@ const AssessmentPage = () => {
     heartRate: 72,
     dailySteps: 8500,
     sleepDuration: 7.5,
-    stressLevel: 'Moderate',
+    stressLevel: 5,
     waterIntake: 6,
     physicalActivity: 30,
     screenTime: 5
@@ -186,20 +186,25 @@ const AssessmentPage = () => {
             </div>
             <div className="space-y-4">
               <div className="flex justify-between items-end">
-                <label className="form-label">Stress Level</label>
+                <label className="form-label">Stress Level (1-10)</label>
                 <div className="text-right">
                    <span className="text-3xl font-bold text-primary">{formData.stressLevel}</span>
                    <span className="text-sm font-bold text-slate-400 ml-2 uppercase">/ 10</span>
                 </div>
               </div>
-              <input 
-                type="range" min="1" max="10" step="1" 
-                value={typeof formData.stressLevel === 'string' ? 5 : formData.stressLevel} 
-                onChange={(e) => handleInputChange('stressLevel', parseInt(e.target.value))}
-                className="slider-input touch-pan-y"
-              />
+              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                  <button 
+                    key={num}
+                    onClick={() => handleInputChange('stressLevel', num)}
+                    className={`h-12 rounded-xl text-sm font-bold transition-all border ${formData.stressLevel === num ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white text-slate-400 border-slate-200 hover:border-primary/30'}`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
               <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">
-                <span>Low</span>
+                <span>Minimal</span>
                 <span>Extreme</span>
               </div>
             </div>

@@ -102,17 +102,23 @@ const RiskForm = () => {
             />
           </div>
 
-          {/* Stress Level Range */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Stress Level</label>
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Stress Level (1-10)</label>
               <span className="text-teal-400 font-bold">{formData.Stress_Level}/10</span>
             </div>
-            <input 
-              type="range" min="1" max="10" step="1" name="Stress_Level" 
-              value={formData.Stress_Level} onChange={handleInputChange}
-              className="slider-input-teal touch-pan-y"
-            />
+            <div className="grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                <button 
+                  key={num}
+                  type="button"
+                  onClick={() => handleInputChange({ target: { name: 'Stress_Level', value: num } })}
+                  className={`h-10 rounded-xl text-xs font-bold transition-all border ${formData.Stress_Level === num ? 'bg-teal-500 text-white border-teal-500 shadow-lg shadow-teal-500/20' : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-teal-500/50'}`}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Food Habits Dropdown */}
