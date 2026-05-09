@@ -208,7 +208,7 @@ const AssessmentPage = () => {
             </div>
             <div className="flex items-center gap-4 p-6 bg-slate-50 rounded-2xl border border-slate-100">
                <ShieldCheck size={24} className="text-primary" />
-               <p className="text-sm text-slate-500 font-medium">By proceeding, you confirm the clinical accuracy of the provided metrics for AI analysis.</p>
+               <p className="text-sm text-slate-500 font-medium">By proceeding, you confirm the accuracy of the provided metrics for AI analysis.</p>
             </div>
           </div>
         );
@@ -223,7 +223,7 @@ const AssessmentPage = () => {
       <div className="flex justify-between items-end">
         <div className="space-y-3">
           <h1 className="text-4xl font-bold text-slate-900">Health Assessment</h1>
-          <p className="text-slate-500 font-medium">Choose between standard clinical metrics or Deep AI Risk Analysis.</p>
+          <p className="text-slate-500 font-medium">Choose between standard health metrics or Deep AI Risk Analysis.</p>
         </div>
         <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
            <button 
@@ -345,10 +345,18 @@ const AssessmentPage = () => {
                <Brain size={40} className="text-white" />
             </div>
             <h2 className="text-3xl font-bold text-slate-900 mb-4">Neural Analysis in Progress</h2>
-            <p className="text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">Cross-referencing your biometric data against 1.2M clinical patterns...</p>
+            <p className="text-slate-500 font-medium max-w-sm mx-auto leading-relaxed">Cross-referencing your behavioral data against 10,000+ health patterns...</p>
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+    
+    {/* Medical Disclaimer */}
+    <div className="text-center py-24 px-16 mt-32 border-t border-white/5">
+       <p className="text-[#9CA3AF] text-[12px] font-inter leading-relaxed max-w-[480px] mx-auto">
+          ⚕ ShifaSense AI is a preventive health awareness platform, not a medical diagnosis tool. 
+          Always consult a licensed healthcare professional for medical advice, diagnosis, or treatment.
+       </p>
     </div>
   );
 };

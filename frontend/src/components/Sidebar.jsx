@@ -31,7 +31,7 @@ const Sidebar = () => {
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-bold text-slate-900 leading-tight">ShifaSense</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clinical Assistant</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Health Assistant</span>
           </div>
         </Link>
       </div>

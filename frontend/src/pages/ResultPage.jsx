@@ -81,7 +81,7 @@ const ResultPage = () => {
   const insights = prediction?.insights || [
     "Circadian rhythm analysis suggests consistent recovery patterns.",
     "Neural focus remains stable despite digital exposure duration.",
-    "Metabolic hydration baseline within clinical efficiency range.",
+    "Metabolic hydration baseline within health efficiency range.",
     "Physical activity magnitude aligns with longevity benchmarks."
   ];
 
@@ -100,7 +100,7 @@ const ResultPage = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-bold text-white tracking-tighter">ShifaSense <span className="text-primary">AI</span></span>
-                <span className="text-[10px] font-bold text-mutedText uppercase tracking-[0.2em]">Neural Diagnostics Engine</span>
+                <span className="text-[10px] font-bold text-mutedText uppercase tracking-[0.2em]">Neural Insight Engine</span>
               </div>
             </div>
             <h1 className="text-4xl lg:text-5xl font-bold text-white tracking-tight">Intelligence <span className="text-mutedText">Report</span></h1>
@@ -173,7 +173,7 @@ const ResultPage = () => {
 
             <div className="glass-card">
               <h3 className="text-xs font-bold text-mutedText uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                <Brain size={18} className="text-primary" /> AI Diagnostic Insights
+                <Brain size={18} className="text-primary" /> AI Health Insights
               </h3>
               <div className="space-y-4">
                 {insights.map((insight, idx) => (
@@ -202,7 +202,7 @@ const ResultPage = () => {
             {/* Visual Analytics Row */}
             <div className="glass-card p-10 h-[450px]">
               <div className="flex justify-between items-center mb-10">
-                 <h3 className="text-xs font-bold text-mutedText uppercase tracking-[0.2em]">Biometric Variance Radar</h3>
+                 <h3 className="text-xs font-bold text-mutedText uppercase tracking-[0.2em]">Behavioral Variance Radar</h3>
                  <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-widest">
                     <Activity size={12} /> Live Metrics
                  </div>
@@ -270,6 +270,14 @@ const ResultPage = () => {
           </motion.div>
         </div>
       </div>
+    </div>
+
+    {/* Medical Disclaimer */}
+    <div className="text-center py-24 px-16 mt-32 border-t border-white/5">
+       <p className="text-[#9CA3AF] text-[12px] font-inter leading-relaxed max-w-[480px] mx-auto">
+          ⚕ ShifaSense AI is a preventive health awareness platform, not a medical diagnosis tool. 
+          Always consult a licensed healthcare professional for medical advice, diagnosis, or treatment.
+       </p>
     </div>
   );
 };

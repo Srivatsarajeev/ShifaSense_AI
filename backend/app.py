@@ -9,6 +9,9 @@ app = Flask(__name__)
 # Allow all origins on all /api/* routes
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+# --- IN-MEMORY STORAGE FOR RECENT ANALYSES ---
+RECENT_ANALYSES = []
+
 # --- LOAD DATASET ---
 CSV_PATH = 'shifasense_enhanced_10k.csv'
 if not os.path.exists(CSV_PATH):
@@ -49,6 +52,10 @@ def analyze():
         user_stress = data.get('stress', 5)
         user_bmi = data.get('bmi', 24)
         
+        user_smoking = data.get('smoking', 'Non-smoker')
+        user_alcohol = data.get('alcohol', 'Never')
+        user_food = data.get('foodHabits', 'Mostly Home Cooked')
+        
         # Normalize User Data
         def normalize(val, field):
             return (val - STATS[field]['min']) / (STATS[field]['max'] - STATS[field]['min'])
@@ -71,11 +78,10 @@ def analyze():
         # Weights: Sleep: 0.25, Stress: 0.25, Activity: 0.20, Water: 0.15, Age: 0.10, BMI: 0.05
         weights = np.array([0.10, 0.25, 0.15, 0.20, 0.25, 0.05])
         
-        # Calculate Weighted Euclidean Distance
-        def weighted_dist(row):
-            return distance.euclidean(user_vec, row[FEATURES].values, w=weights)
-        
-        df['dist'] = df_norm.apply(weighted_dist, axis=1)
+        # Calculate Weighted Euclidean Distance using Vectorized NumPy (Instant)
+        diffs = df_norm[FEATURES].values - user_vec
+        squared_diffs = (diffs ** 2) * weights
+        df['dist'] = np.sqrt(squared_diffs.sum(axis=1))
         
         # Get 20 nearest neighbors
         neighbors = df.nsmallest(20, 'dist')
@@ -105,15 +111,11 @@ def analyze():
         risk_color = color_map.get(risk_label_raw, "#F59E0B")
         
         # Find Impactful Factors (Risk Factors)
-        # Compare user to "Healthy" neighbors if possible, otherwise all neighbors
         healthy_neighbors = neighbors[neighbors['Disease_Risk'] == 'Low']
-        if healthy_neighbors.empty:
-            ref_group = neighbors
-        else:
-            ref_group = healthy_neighbors
+        ref_group = healthy_neighbors if not healthy_neighbors.empty else neighbors
             
         factors = []
-        # Check deviations
+        # Check numerical deviations
         devs = [
             ("Sleep", user_sleep, ref_group['Sleep_Hours'].mean(), "h"),
             ("Stress", user_stress, ref_group['Stress_Level'].mean(), "/10"),
@@ -122,7 +124,6 @@ def analyze():
             ("BMI", user_bmi, ref_group['BMI'].mean(), "")
         ]
         
-        # Simple heuristic: for sleep/activity/water, lower is worse. For stress/bmi, higher is worse.
         impacts = []
         for name, u_val, n_val, unit in devs:
             if name in ["Sleep", "Activity", "Hydration"]:
@@ -131,18 +132,26 @@ def analyze():
                 diff = u_val - n_val
             impacts.append((diff, name, u_val, n_val, unit))
             
-        # Sort by impact
+        # Add categorical risks if applicable
+        if user_smoking != 'Non-smoker':
+            factors.append(f"Smoking: {user_smoking} habit increases vascular risk")
+        if user_alcohol == 'Regular':
+            factors.append("Alcohol: Regular consumption impacting metabolic health")
+        if user_food == 'Mostly Junk Food':
+            factors.append("Diet: High processed food intake detected")
+
+        # Sort numerical impacts
         impacts.sort(key=lambda x: x[0], reverse=True)
         
-        for diff, name, u_val, n_val, unit in impacts[:3]:
+        for diff, name, u_val, n_val, unit in impacts:
+            if len(factors) >= 4: break
             if diff > 0:
                 factors.append(f"{name}: {u_val}{unit} (vs avg {round(n_val, 1)}{unit})")
         
-        if len(factors) < 3:
-            # Fallback if few deviations
-            factors.extend(["Consistent monitoring recommended", "Hydration balance optimal"][:3-len(factors)])
+        if not factors:
+            factors.extend(["Consistent monitoring recommended", "Hydration balance optimal"])
 
-        return jsonify({
+        res_obj = {
             "riskScore": round(risk_score, 1),
             "healthScore": health_score,
             "riskLabel": risk_label,
@@ -160,7 +169,25 @@ def analyze():
             "sampleSize": 20,
             "datasetSize": 10000,
             "dataMessage": "Risk score calculated from 20 similar profiles in our dataset of 10,000 health records"
-        })
+        }
+
+        # Save clinical record for Admin Panel
+        clinical_record = {
+            "id": len(RECENT_ANALYSES) + 1,
+            "name": data.get('name', 'Anonymous'),
+            "age": user_age,
+            "gender": data.get('gender', 'Unknown'),
+            "bmi": user_bmi,
+            "sleep": user_sleep,
+            "activity": user_activity,
+            "healthScore": health_score,
+            "riskLabel": risk_label,
+            "riskColor": risk_color,
+            "timestamp": pd.Timestamp.now().strftime("%I:%M %p, %b %d")
+        }
+        RECENT_ANALYSES.append(clinical_record)
+
+        return jsonify(res_obj)
     except Exception as e:
         print(f"Error in analysis: {e}")
         return jsonify({"error": str(e)}), 400
@@ -200,6 +227,11 @@ def health():
         "dataset": "loaded" if not df.empty else "failed",
         "rows": len(df)
     })
+
+# --- ENDPOINT 4: ADMIN RECORDS ---
+@app.route('/api/admin/records', methods=['GET'])
+def get_admin_records():
+    return jsonify(RECENT_ANALYSES[::-1]) # Latest first
 
 if __name__ == '__main__':
     # Kill existing process on port 5000 if needed (handled by runner usually)

@@ -1,15 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap');
-
 :root {
-  --primary: #2563EB;
-  --bg-slate: #F8FAFC;
-  --border: #E5E7EB;
-  --text-main: #111827;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-accent: #EFF6FF;
+  --bg-accent-warm: #FFF7ED;
+  
+  --blue-primary: #2563EB;
+  --blue-light: #DBEAFE;
+  --blue-mid: #93C5FD;
+  
+  --indigo: #6366F1;
+  --indigo-light: #E0E7FF;
+  
+  --green: #10B981;
+  --green-light: #D1FAE5;
+  
+  --amber: #F59E0B;
+  --amber-light: #FEF3C7;
+  
+  --red: #EF4444;
+  --red-light: #FEE2E2;
+  
+  --text-primary: #111827;
+  --text-secondary: #374151;
   --text-muted: #6B7280;
+  --text-subtle: #9CA3AF;
+  
+  --border: #E5E7EB;
+  --border-light: #F3F4F6;
+  
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
 }
 
 body {
@@ -58,4 +89,182 @@ body {
 /* Stepper Line Transition */
 .stepper-line-complete {
   @apply h-full bg-[#10B981] transition-all duration-500;
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white border border-slate-200 rounded-[2rem] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-500;
+  }
+  
+  .btn-primary {
+    @apply bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-4 px-10 rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95 flex items-center justify-center gap-2;
+  }
+
+  .btn-secondary {
+    @apply bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold py-4 px-10 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2;
+  }
+
+  .form-label {
+    @apply text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-2 block;
+  }
+}
+.shifa-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s infinite;
+}
+.shifa-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.shifa-card-accent {
+  background: linear-gradient(135deg, var(--bg-accent) 0%, #F5F3FF 100%);
+  border: 1px solid var(--blue-light);
+}
+
+.shifa-card-success {
+  background: linear-gradient(135deg, var(--green-light) 0%, #ECFDF5 100%);
+  border: 1px solid #BBF7D0;
+  border-left: 4px solid var(--green);
+}
+
+.shifa-card-warning {
+  background: linear-gradient(135deg, #FFFBEB 0%, var(--bg-accent-warm) 100%);
+  border: 1px solid #FDE68A;
+  border-left: 4px solid var(--amber);
+}
+
+.shifa-card-danger {
+  background: linear-gradient(135deg, #FFF5F5 0%, var(--red-light) 100%);
+  border: 1px solid #FECACA;
+  border-left: 4px solid var(--red);
+}
+
+.shifa-metric-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.shifa-metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.shifa-metric-sleep::before { background: var(--indigo); }
+.shifa-metric-stress::before { background: var(--red); }
+.shifa-metric-hydration::before { background: var(--blue-primary); }
+.shifa-metric-activity::before { background: var(--green); }
+.shifa-metric-steps::before { background: var(--amber); }
+.shifa-metric-heart::before { background: var(--red); }
+.shifa-metric-screen::before { background: #8B5CF6; }
+
+.btn-primary {
+  background: var(--blue-primary);
+  color: white;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+.btn-primary:hover:not(:disabled) {
+  background: #1D4ED8;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.4);
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(37,99,235,0.3);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: white;
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  border-color: var(--blue-primary);
+  color: var(--blue-primary);
+  background: var(--bg-accent);
+}
+
+.btn-danger-outline {
+  border: 1.5px solid var(--red);
+  color: var(--red);
+  background: transparent;
+}
+.btn-danger-outline:hover {
+  background: var(--red-light);
+}
+
+.nav-glass {
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(229,231,235,0.8);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+
+.hero-gradient {
+  background: linear-gradient(160deg, #EFF6FF 0%, #F5F3FF 40%, #FFFFFF 70%);
+}
+
+.hero-circle-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%);
+  position: absolute; top: -200px; right: -200px;
+  pointer-events: none;
+}
+.hero-circle-2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(99,102,241,0.05) 0%, transparent 70%);
+  position: absolute; bottom: -100px; left: -100px;
+  pointer-events: none;
+}
+.hero-circle-3 {
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%);
+  position: absolute; top: 100px; left: 30%;
+  pointer-events: none;
+}
+
+.stepper-completed {
+  background: linear-gradient(135deg, #2563EB, #6366F1);
+  color: white;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.4);
 }

@@ -47,8 +47,8 @@ const Navbar = () => {
               <User size={20} className="text-slate-400 group-hover:text-slate-700" />
             </div>
             <div className="hidden lg:flex flex-col">
-              <span className="text-xs font-bold text-slate-900 leading-tight">Supritha S.</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Medical Officer</span>
+              <span className="text-xs font-bold text-slate-900 leading-tight">Namaste, User</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">My Profile</span>
             </div>
           </div>
         </div>

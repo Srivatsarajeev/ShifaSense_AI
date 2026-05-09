@@ -32,10 +32,15 @@ const RiskForm = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.post('http://localhost:8000/predict-risk', formData);
+      // If deployed to Vercel, use the relative /api path for the serverless function.
+      // Otherwise, fallback to the local API endpoint.
+      const isProduction = import.meta.env.MODE === 'production' || window.location.hostname !== 'localhost';
+      const apiUrl = isProduction ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:8000');
+      
+      const response = await axios.post(`${apiUrl}/predict-risk`, formData);
       setResult(response.data);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to connect to the intelligence core.');
+      setError(err.response?.data?.detail || 'Failed to connect to the insight core.');
     } finally {
       setLoading(false);
     }

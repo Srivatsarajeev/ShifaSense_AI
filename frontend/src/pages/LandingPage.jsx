@@ -25,16 +25,16 @@ const LandingPage = () => {
             className="space-y-8"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-primary text-[10px] font-bold uppercase tracking-widest">
-              Next Generation Clinical Intelligence
+              Next Generation Health Intelligence
             </div>
             
             <h1 className="text-6xl lg:text-7xl font-bold text-slate-900 leading-[1.1] tracking-tight">
-              Clinical Precision Meets <br />
+              Health Precision Meets <br />
               <span className="text-primary italic">Empathetic</span> AI
             </h1>
             
             <p className="text-slate-500 text-lg lg:text-xl max-w-xl leading-relaxed">
-              ShifaSense AI provides real-time health analysis and clinical-grade intelligence to assist healthcare professionals in delivering faster, more accurate patient care.
+              ShifaSense AI provides real-time health analysis and health-grade intelligence to assist healthcare professionals in delivering faster, more accurate patient care.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
@@ -71,7 +71,7 @@ const LandingPage = () => {
             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-slate-100 p-3 bg-white">
                <img 
                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=2070" 
-                 alt="Clinical AI Interface" 
+                 alt="Health AI Interface" 
                  className="w-full h-auto rounded-[1.5rem]"
                />
                <div className="absolute bottom-10 left-10 right-10 glass p-6 rounded-2xl border border-white/20 shadow-2xl">
@@ -95,7 +95,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-8 lg:px-20 grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
           {[
             { val: '1M+', label: 'Analysis Completed' },
-            { val: '99.9%', label: 'Clinical Accuracy' },
+            { val: 'Global', label: 'Health Profiles' },
             { val: '2k+', label: 'Medical Institutions' },
             { val: '24/7', label: 'Real-time Support' }
           ].map((stat, i) => (
@@ -112,7 +112,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto space-y-20">
           <div className="text-center max-w-2xl mx-auto space-y-4">
             <h2 className="text-4xl font-bold text-slate-900 tracking-tight">Capabilities Engineered for Excellence</h2>
-            <p className="text-slate-500 font-medium leading-relaxed">Precision diagnostic tools powered by HIPAA-compliant artificial intelligence.</p>
+            <p className="text-slate-500 font-medium leading-relaxed">Precision insight tools powered by HIPAA-compliant artificial intelligence.</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -148,7 +148,7 @@ const LandingPage = () => {
                     <FileText size={24} />
                   </div>
                   <h4 className="text-lg font-bold text-slate-900 mb-2">Smart Reports</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed">Automated clinical summaries for faster decision making.</p>
+                  <p className="text-sm text-slate-500 leading-relaxed">Automated health summaries for faster decision making.</p>
                </div>
             </div>
           </div>
@@ -183,7 +183,7 @@ const LandingPage = () => {
       <section className="py-24 px-8 lg:px-20">
         <div className="max-w-7xl mx-auto rounded-[3rem] bg-primary p-20 text-center space-y-10 relative overflow-hidden">
            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
-           <h2 className="text-5xl font-bold text-white max-w-2xl mx-auto leading-tight">Ready to enhance your clinical workflow?</h2>
+           <h2 className="text-5xl font-bold text-white max-w-2xl mx-auto leading-tight">Ready to enhance your health workflow?</h2>
            <p className="text-blue-100 text-xl max-w-xl mx-auto font-medium">Join thousands of healthcare professionals who trust ShifaSense AI for precision insights.</p>
            <div className="flex flex-wrap justify-center gap-4 pt-6">
               <button className="bg-white text-primary font-bold py-4 px-10 rounded-2xl shadow-xl hover:bg-blue-50 transition-all">
@@ -210,7 +210,7 @@ const LandingPage = () => {
               <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
               <a href="#" className="hover:text-primary transition-colors">HIPAA Compliance</a>
            </div>
-           <p className="text-[10px] text-slate-400 font-medium">© 2026 ShifaSense AI. Clinical Grade Intelligence.</p>
+           <p className="text-[10px] text-slate-400 font-medium">© 2026 ShifaSense AI. Health Grade Intelligence.</p>
         </div>
       </footer>
     </div>
