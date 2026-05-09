@@ -9,7 +9,7 @@ const getApiUrl = () => {
   const hostname = window.location.hostname;
   // Capacitor app uses capacitor:// — must use absolute production URL
   if (protocol === 'capacitor:' || protocol === 'file:') {
-    return import.meta.env.VITE_PROD_API_URL || 'https://shifa-sense-ai.vercel.app/api';
+    return import.meta.env.VITE_PROD_API_URL || 'https://shifasense.vercel.app/api';
   }
   // Local development
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
