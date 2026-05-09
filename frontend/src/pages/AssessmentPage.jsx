@@ -60,7 +60,7 @@ const AssessmentPage = () => {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
     if (protocol === 'capacitor:' || protocol === 'file:') {
-      return 'https://shifasense-ai.vercel.app/api';
+      return import.meta.env.VITE_PROD_API_URL || 'https://shifa-sense-ai.vercel.app/api';
     }
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return import.meta.env.VITE_API_URL || 'http://localhost:8000';

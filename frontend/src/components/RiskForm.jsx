@@ -3,19 +3,19 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-// Determine API URL once at module level
+// Determine API URL based on runtime environment
 const getApiUrl = () => {
-  const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  // Capacitor app uses capacitor:// or file:// — must use absolute URL
+  const hostname = window.location.hostname;
+  // Capacitor app uses capacitor:// — must use absolute production URL
   if (protocol === 'capacitor:' || protocol === 'file:') {
-    return 'https://shifasense-ai.vercel.app/api';
+    return import.meta.env.VITE_PROD_API_URL || 'https://shifa-sense-ai.vercel.app/api';
   }
-  // Local dev
+  // Local development
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return import.meta.env.VITE_API_URL || 'http://localhost:8000';
   }
-  // Vercel/production — use relative path
+  // Vercel/production web — use relative path
   return '/api';
 };
 
