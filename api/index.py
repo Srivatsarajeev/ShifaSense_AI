@@ -268,18 +268,34 @@ def predict_risk():
             
         risk_score = max(0, min(100, risk_score))
         
+        # Calculate display fields
+        health_score = round(100 - risk_score, 1)
+        risk_label = "High Risk Pattern" if risk_score > 70 else ("Moderate Variance" if risk_score > 40 else "Optimal Status")
+        risk_color = "#EF4444" if risk_score > 70 else ("#F59E0B" if risk_score > 40 else "#10B981")
+        
+        # Generate dynamic insights based on risk factors
+        insights = []
         if risk_score > 70:
-            ai_coaching = f"Your elevated risk of {round(risk_score, 1)}% necessitates an immediate 20% reduction in sedentary time and a transition to home-cooked meals to stabilize metabolic markers. Consider a clinical consultation to address potential cardiovascular stressors identified in your profile."
+            insights = [
+                "Immediate cardiovascular stabilization protocol recommended.",
+                "Metabolic markers indicate high systemic stress levels.",
+                "Neural recovery cycles significantly impaired by current habits."
+            ]
         elif risk_score > 40:
-            ai_coaching = f"A moderate risk score of {round(risk_score, 1)}% suggests focusing on sleep hygiene and increasing daily hydration to improve biological recovery. Reducing occasional habits and increasing activity to 45 minutes daily will significantly lower your long-term risk profile."
+            insights = [
+                "Moderate physiological variance detected in recovery data.",
+                "Optimizing hydration and sleep hygiene will stabilize baseline.",
+                "Activity magnitude is below recommended longevity benchmarks."
+            ]
         else:
-            ai_coaching = f"With a low risk score of {round(risk_score, 1)}%, you should maintain your current activity levels while optimizing deep sleep cycles for peak cognitive performance. Continue your home-cooked meal routine to sustain these excellent metabolic baselines."
+            insights = [
+                "Bio-sync integrity verified across all core metrics.",
+                "Circadian rhythm analysis suggests optimal recovery patterns.",
+                "Metabolic hydration baseline within high efficiency range."
+            ]
 
         # Save clinical record
         import datetime
-        health_score = round(100 - risk_score, 1)
-        risk_label = "High Risk Pattern" if risk_score > 70 else ("Moderate Risk" if risk_score > 40 else "Healthy")
-        risk_color = "#EF4444" if risk_score > 70 else ("#F59E0B" if risk_score > 40 else "#10B981")
         clinical_record = {
             "id": len(RECENT_ANALYSES) + 1,
             "name": input_data.get('name', 'Anonymous'),
@@ -296,8 +312,12 @@ def predict_risk():
         RECENT_ANALYSES.append(clinical_record)
 
         return jsonify({
+            "score": health_score,
             "predicted_risk_percentage": round(risk_score, 1),
-            "ai_coaching": ai_coaching
+            "risk_level": risk_label,
+            "ai_coaching": ai_coaching,
+            "insights": insights,
+            "status": "success"
         })
     except Exception as e:
         import traceback

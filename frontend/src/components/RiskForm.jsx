@@ -34,7 +34,8 @@ const RiskForm = () => {
     try {
       // If deployed to Vercel, use the relative /api path for the serverless function.
       // Otherwise, fallback to the local API endpoint.
-      const isProduction = import.meta.env.MODE === 'production' || window.location.hostname !== 'localhost';
+      // Use a more robust production check to handle Vercel and Capacitor environments
+      const isProduction = import.meta.env.MODE === 'production' || window.location.hostname !== 'localhost' || (window.location.protocol === 'https:' && !window.location.hostname.includes('127.0.0.1'));
       const apiUrl = isProduction ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:8000');
       
       const response = await axios.post(`${apiUrl}/predict-risk`, formData);
@@ -108,8 +109,9 @@ const RiskForm = () => {
               <span className="text-teal-400 font-bold">{formData.Stress_Level}/10</span>
             </div>
             <input 
-              type="range" min="1" max="10" name="Stress_Level" value={formData.Stress_Level} onChange={handleInputChange}
-              className="w-full h-1.5 bg-gray-800 rounded-full appearance-none cursor-pointer accent-teal-500"
+              type="range" min="1" max="10" step="1" name="Stress_Level" 
+              value={formData.Stress_Level} onChange={handleInputChange}
+              className="slider-input-teal touch-pan-y"
             />
           </div>
 

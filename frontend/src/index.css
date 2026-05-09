@@ -49,12 +49,21 @@ body {
 
 /* Custom Slider Styles */
 .slider-input {
-  @apply w-full h-[6px] bg-[#E5E7EB] rounded-full appearance-none cursor-pointer outline-none;
-  background: linear-gradient(to right, #2563EB var(--range-progress), #E5E7EB var(--range-progress));
+  @apply w-full h-[8px] bg-slate-200 rounded-full appearance-none cursor-pointer outline-none transition-all;
 }
 
 .slider-input::-webkit-slider-thumb {
-  @apply w-5 h-5 bg-[#2563EB] rounded-full appearance-none border-[3px] border-white shadow-[0_2px_6px_rgba(37,99,235,0.4)] cursor-pointer transition-transform hover:scale-110;
+  @apply w-6 h-6 bg-primary rounded-full appearance-none border-4 border-white shadow-lg cursor-pointer transition-transform active:scale-125;
+  -webkit-appearance: none;
+}
+
+.slider-input-teal::-webkit-slider-thumb {
+  @apply w-6 h-6 bg-teal-500 rounded-full appearance-none border-4 border-white shadow-lg cursor-pointer transition-transform active:scale-125;
+  -webkit-appearance: none;
+}
+
+.slider-input::-moz-range-thumb {
+  @apply w-6 h-6 bg-primary rounded-full border-4 border-white shadow-lg cursor-pointer transition-transform;
 }
 
 /* Pulse Animation */
