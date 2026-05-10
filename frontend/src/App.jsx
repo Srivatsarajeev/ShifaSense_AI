@@ -735,9 +735,11 @@ const ResultsView = ({ result, formData, backendData, setView, setSavedResults, 
       id: reportId
     };
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))));
-    const url = window.location.origin + window.location.pathname + '?report=' + encoded;
+    // Always use the Vercel production URL so QR codes work from the APK
+    const baseUrl = 'https://shifasense.vercel.app';
+    const url = baseUrl + '/?report=' + encoded;
     setShareUrl(url);
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(url).catch(() => {});
     setToast('✓ Report link copied to clipboard');
     setTimeout(() => setToast(''), 3000);
   };
@@ -760,8 +762,7 @@ const ResultsView = ({ result, formData, backendData, setView, setSavedResults, 
       `❤️ Heart Rate: ${formData.heartRate} bpm\n\n` +
       `💡 *Top Recommendation:*\n` +
       `${result.recommendations[0]}\n\n` +
-      `🔗 View full report: ` +
-      `${window.location.href}\n\n` +
+      `🔗 View full report: https://shifasense.vercel.app\n\n` +
       `_ShifaSense AI — Know your health ` +
       `before it becomes a problem_\n` +
       `_⚕ Not a medical diagnosis tool_`;
