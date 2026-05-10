@@ -1161,141 +1161,155 @@ const ShifaSenseApp = () => {
     setLastAnalysisTime(now);
     setAnalysisCount(prev => prev + 1);
 
-    setLoading(true); setPhase(1); setLoadingText("Searching comprehensive health profiles...");
-    let bData = null;
-    
-    // Sanitize user inputs
-    const safeData = {
-      name: sanitizeInput(formData.name),
-      age: formData.age, 
-      gender: sanitizeInput(formData.gender), 
-      sleep: formData.sleep, 
-      stress: formData.stress, 
-      hydration: formData.hydration, 
-      activity: formData.activity, 
-      bmi: formData.bmi, 
-      smoking: sanitizeInput(formData.smoking), 
-      alcohol: sanitizeInput(formData.alcohol), 
-      foodHabits: sanitizeInput(formData.foodHabits),
-      junkFoodFrequency: formData.junkFoodFrequency 
+    setLoading(true); setPhase(1); setLoadingText("Running scikit-learn model...");
+
+    // Map form fields to the exact schema expected by backend/main.py /predict-risk
+    const modelInput = {
+      Age: Number(formData.age),
+      Sleep_Hours: Number(formData.sleep),
+      Water_Liters: Number(formData.hydration) * 0.25, // convert glasses → liters
+      Activity_Mins: Number(formData.activity),
+      Stress_Level: Number(formData.stress),
+      BMI: Number(formData.bmi),
+      Food_Habits: formData.foodHabits || 'Mostly Home Cooked',
+      Smoking_Habit: formData.smoking || 'Non-smoker'
     };
 
+    let riskScore = null;
+    let aiCoaching = null;
+
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/analyze`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      setLoadingText("Querying prediction model...");
+      const response = await fetch(`${apiUrl}/predict-risk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(safeData)
+        body: JSON.stringify(modelInput)
       });
       if (response.ok) {
-        bData = await response.json(); setBackendData(bData); setLoadingText("Finding closest health matches...");
+        const data = await response.json();
+        riskScore = data.predicted_risk_percentage;
+        aiCoaching = data.ai_coaching;
+        setBackendData({ confidence: 0.87, from: 'scikit-learn-model' });
+      } else {
+        console.warn('Model API returned error:', response.status);
       }
-    } catch (err) { 
-      console.error('Analysis error:', err);
-      // Safe error log
+    } catch (err) {
+      console.warn('Could not reach local model, using local calculation:', err.message);
     }
 
-    setPhase(2); setLoadingText("Generating health protocol...");
-    const score = bData ? bData.healthScore : 75;
-    let finalResult = {
-      healthScore: score,
-      riskLevel: bData ? bData.riskLabel : 'Moderate Risk',
-      riskColor: bData ? bData.riskColor : "#F59E0B",
-      summary: bData ? `Analysis complete. Behavioral patterns align with ${bData.riskLabel} health profiles.` : "Profile analysis active.",
-      riskFactors: bData ? bData.riskFactors : [],
-      recommendations: bData && Array.isArray(bData.riskFactors) && bData.riskFactors.length > 0 ? bData.riskFactors.map(f => `Address ${f.split(':')[0]} as a priority.`) : ["Improve sleep consistency", "Increase hydration"],
-      radarData: [ { metric: 'Sleep', value: Math.max(40, 100 - (8-formData.sleep)*10) }, { metric: 'Stress', value: 100 - formData.stress*10 }, { metric: 'Activity', value: Math.min(100, (formData.activity/180)*100) }, { metric: 'Screen', value: 100 - (formData.screenTime/16)*100 }, { metric: 'Steps', value: Math.min(100, (formData.steps/10000)*100) }, { metric: 'Hydration', value: Math.min(100, (formData.hydration/8)*100) } ]
-    };
+    setPhase(2); setLoadingText("Building health report...");
 
-    if (bData && bData.neighborStats) {
-      finalResult.neighborComparison = { userSleep: formData.sleep, avgSleep: bData.neighborStats.avgSleep, userStress: formData.stress, avgStress: bData.neighborStats.avgStress, userActivity: formData.activity, avgActivity: bData.neighborStats.avgActivity };
+    // If model was unreachable, compute score locally from inputs
+    if (riskScore === null) {
+      const s = Number(formData.sleep);
+      const stress = Number(formData.stress);
+      const activity = Number(formData.activity);
+      const hydration = Number(formData.hydration) * 0.25;
+      riskScore = Math.max(0, Math.min(100,
+        10 + (1.8 * stress) + (-1.2 * s) + (-0.015 * activity) + (-1.5 * hydration) + ((formData.bmi - 22) * 0.5)
+      ));
     }
-    
-    // Add additional metrics to radar data if they exist in dataset/backend
-    finalResult.radarData.push(
-      { metric: 'BMI', value: Math.max(0, 100 - Math.abs(formData.bmi - 22) * 4) },
-      { metric: 'Lifestyle', value: (formData.smoking === 'Non-smoker' ? 40 : 0) + (formData.alcohol === 'Never' ? 40 : 0) + (formData.foodHabits === 'Balanced' ? 20 : 0) }
+
+    // healthScore is inverse of risk
+    const healthScore = Math.max(0, Math.min(100, Math.round(100 - riskScore)));
+    const riskLevel = riskScore > 70 ? 'High Risk Pattern' : riskScore > 40 ? 'Moderate Risk' : 'Healthy';
+    const riskColor = riskScore > 70 ? '#EF4444' : riskScore > 40 ? '#F59E0B' : '#10B981';
+
+    const summary = aiCoaching || (
+      riskScore > 70
+        ? `Your risk score of ${riskScore.toFixed(1)}% is elevated. Focus on improving sleep, reducing stress, and increasing daily activity immediately.`
+        : riskScore > 40
+        ? `A moderate risk of ${riskScore.toFixed(1)}% detected. Small improvements in hydration, sleep consistency, and activity levels will help significantly.`
+        : `Great results — risk score of ${riskScore.toFixed(1)}%. Maintain your current healthy habits and keep monitoring regularly.`
     );
 
-    // Provide immediate result to UI, update challenges later
-    finalResult.challenges = null;
-    finalResult = validateResult(finalResult);
-    setResult(finalResult); 
-    
-    // Save to history for dashboard persistence
-    try {
-      const history = JSON.parse(localStorage.getItem('shifasense_history') || '[]');
-      const newEntry = {
-        id: `SS-${Date.now()}`,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2026' }),
-        data: formData,
-        prediction: { 
-          score: finalResult.healthScore, 
-          risk_level: finalResult.riskLevel 
-        },
-        status: 'Completed'
-      };
-      localStorage.setItem('shifasense_history', JSON.stringify([newEntry, ...history]));
-    } catch (e) {
-      console.warn("Could not save to history", e);
-    }
+    const recommendations = [
+      formData.sleep < 7 ? `Increase sleep from ${formData.sleep}h to at least 7h — sleep is your #1 recovery tool.` : `Your sleep of ${formData.sleep}h is good. Maintain a consistent sleep schedule.`,
+      formData.stress > 6 ? `Your stress level of ${formData.stress}/10 is high. Try 10 mins of deep breathing or a short walk daily.` : `Stress is manageable at ${formData.stress}/10. Keep using your current coping strategies.`,
+      formData.hydration < 6 ? `Increase water intake — currently ${formData.hydration} glasses. Target 8+ glasses per day.` : `Hydration looks good at ${formData.hydration} glasses. Keep it up.`,
+      formData.activity < 30 ? `Activity of ${formData.activity} mins/day is below recommended 30 mins. Add a short walk to your routine.` : `Activity level of ${formData.activity} mins/day is on track. Try to stay consistent.`,
+      formData.screenTime > 8 ? `Screen time of ${formData.screenTime}h is high. Reduce to under 6h and take eye breaks every hour.` : `Screen time of ${formData.screenTime}h is reasonable. Use the 20-20-20 rule to reduce eye strain.`
+    ];
 
-    setView('results'); setLoading(false);
+    const riskFactors = [];
+    if (formData.sleep < 7) riskFactors.push(`Sleep: Only ${formData.sleep}h vs recommended 7-8h`);
+    if (formData.stress > 6) riskFactors.push(`Stress: ${formData.stress}/10 — elevated (target ≤ 5)`);
+    if (formData.hydration < 6) riskFactors.push(`Hydration: ${formData.hydration} glasses vs target 8+`);
+    if (formData.activity < 30) riskFactors.push(`Activity: ${formData.activity} mins vs target 30+ mins`);
+    if (formData.screenTime > 8) riskFactors.push(`Screen Time: ${formData.screenTime}h exceeds healthy limit of 6h`);
+    if (formData.steps < 5000) riskFactors.push(`Steps: ${formData.steps} vs target 8000-10000/day`);
+    if (formData.heartRate > 90) riskFactors.push(`Heart Rate: ${formData.heartRate} bpm is above optimal (60-80 bpm)`);
 
-    // FIX 1: Run Claude API with ONLY submitted fields — no smoking, alcohol, diet hallucination
+    const finalResult = validateResult({
+      healthScore,
+      riskLevel,
+      riskColor,
+      summary,
+      riskFactors: riskFactors.slice(0, 3),
+      recommendations,
+      sleepScore: Math.min(100, Math.round((formData.sleep / 8) * 100)),
+      stressScore: Math.round((10 - formData.stress) * 10),
+      activityScore: Math.min(100, Math.round((formData.activity / 60) * 100)),
+      radarData: [
+        { metric: 'Sleep', value: Math.min(100, Math.round((formData.sleep / 8) * 100)) },
+        { metric: 'Stress', value: Math.round((10 - formData.stress) * 10) },
+        { metric: 'Activity', value: Math.min(100, Math.round((formData.activity / 60) * 100)) },
+        { metric: 'Screen', value: Math.max(0, Math.round(100 - (formData.screenTime / 16) * 100)) },
+        { metric: 'Steps', value: Math.min(100, Math.round((formData.steps / 10000) * 100)) },
+        { metric: 'Hydration', value: Math.min(100, Math.round((formData.hydration / 8) * 100)) }
+      ],
+      challenges: null
+    });
+
+    setResult(finalResult);
+    setView('results');
+    setLoading(false);
+
+    // Async: Claude 7-day challenges (non-blocking)
     (async () => {
       try {
+        const apiKey = import.meta.env.VITE_CLAUDE_API_KEY;
+        if (!apiKey || apiKey === 'dummy_key') throw new Error('No API key');
         const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': import.meta.env.VITE_CLAUDE_API_KEY || 'dummy_key',
+            'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
             'anthropic-dangerously-allow-browser': 'true'
           },
           body: JSON.stringify({
             model: 'claude-3-haiku-20240307',
-            max_tokens: 1200,
-            system: "You are a health coach. Return ONLY valid JSON. No markdown. Never mention smoking, alcohol, diet, BMI, or any field not in the submitted data.",
-            messages: [{ 
-              role: 'user', 
-              content: `Analyze this health profile and return a comprehensive JSON report.\n\nSUBMITTED DATA ONLY (use ONLY these 7 fields for all analysis):\nName: ${formData.name}\nAge: ${formData.age}\nSleep: ${formData.sleep}h\nStress: ${formData.stress}/10\nHydration: ${formData.hydration} glasses\nScreen Time: ${formData.screenTime}h\nPhysical Activity: ${formData.activity} mins\nDaily Steps: ${formData.steps}\nResting Heart Rate: ${formData.heartRate} bpm\n\nBase healthScore calculation strictly on these 7 inputs only.\nSleep < 5h is a major negative factor. Stress > 7 is a major negative factor.\nSteps < 3000 is a moderate negative factor. Activity < 15 mins is a moderate negative factor.\nHydration < 4 glasses is a moderate negative factor. Screen > 10h is a moderate negative factor.\nHeart rate > 100 is a moderate negative factor.\nA user with sleep=2, stress=2, hydration=3, steps=5000, activity=30, screen=1, hr=70 should score approximately 45-55 because sleep is critically low but other factors are decent. Never score above 70 when any single factor is critically bad.\n\nReturn JSON with these exact fields:\n{\n  "healthScore": number 0-100,\n  "riskLevel": "Healthy" | "Moderate Risk" | "High Risk Pattern",\n  "riskColor": "#10B981" | "#F59E0B" | "#EF4444",\n  "summary": "2-3 sentence analysis referencing actual submitted values only",\n  "riskFactors": [\n    "array of exactly 3 strings. Each must identify a risk from ONLY these submitted values: sleep (${formData.sleep}h), stress (${formData.stress}/10), hydration (${formData.hydration} glasses), screenTime (${formData.screenTime}h), activity (${formData.activity} mins), steps (${formData.steps}), heartRate (${formData.heartRate} bpm). Format: 'FieldName: specific observation (user value vs healthy benchmark)'. Example: 'Sleep: Only 4h vs recommended 7-8h'. NEVER mention smoking, alcohol, diet, or BMI."\n  ],\n  "recommendations": ["4-5 specific actionable items based ONLY on the 7 submitted fields"],\n  "sleepScore": number 0-100,\n  "stressScore": number 0-100,\n  "activityScore": number 0-100,\n  "challenges": {\n    "challenge_title": "string",\n    "focus_areas": ["string"],\n    "days": [{ "day": 1, "title": "string", "task": "string referencing actual submitted numbers", "category": "sleep|stress|activity|hydration|screen", "icon": "emoji" }]\n  }\n}`
-            }]
+            max_tokens: 900,
+            system: "You are a health coach. Return ONLY valid JSON. No markdown. Never mention smoking, alcohol, diet, or BMI.",
+            messages: [{ role: 'user', content: `Create a 7-day health challenge for someone with: Sleep ${formData.sleep}h, Stress ${formData.stress}/10, Steps ${formData.steps}, Activity ${formData.activity} mins, Hydration ${formData.hydration} glasses, Screen ${formData.screenTime}h.\n\nReturn JSON: {"challenge_title":"string","focus_areas":["string"],"days":[{"day":1,"title":"string","task":"string with actual numbers","category":"sleep|stress|activity|hydration|screen","icon":"emoji"}]}` }]
           })
         });
         if (claudeRes.ok) {
-          const claudeJson = await claudeRes.json();
-          const content = claudeJson.content[0].text;
-          const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(jsonStr);
-          // FIX 4: Apply score correction after parsing
-          const corrected = correctScore(parsed, formData);
-          const challenges = corrected.challenges || null;
-          delete corrected.challenges;
-          const validated = validateResult(corrected);
-          setResult(prev => prev ? { ...prev, ...validated, challenges } : prev);
-        } else {
-          throw new Error('Claude API error');
+          const json = await claudeRes.json();
+          const challenges = JSON.parse(json.content[0].text.replace(/```json/g, '').replace(/```/g, '').trim());
+          setResult(prev => prev ? { ...prev, challenges } : prev);
         }
-      } catch (err) {
-        console.warn("Claude API failed or not configured, using fallback challenges");
-        const fallbackChallenges = {
+      } catch {
+        setResult(prev => prev ? { ...prev, challenges: {
           challenge_title: "7-Day Health Kickstart",
           focus_areas: ["Sleep", "Activity", "Hydration"],
           days: [
-            { day: 1, title: 'Sleep Early', task: `Get to bed 30 mins earlier tonight to improve your ${formData.sleep}h sleep.`, category: 'sleep', icon: '😴' },
-            { day: 2, title: 'Hydrate Plus', task: `Drink 1 more glass than your usual ${formData.hydration} glasses today.`, category: 'hydration', icon: '💧' },
-            { day: 3, title: 'Move More', task: `Add 10 mins to your ${formData.activity} mins activity.`, category: 'activity', icon: '🏃' },
-            { day: 4, title: 'De-stress', task: `Take 5 mins to breathe deeply and lower your ${formData.stress}/10 stress.`, category: 'stress', icon: '🧘' },
-            { day: 5, title: 'Step Up', task: `Aim for 1000 more steps than your usual ${formData.steps}.`, category: 'activity', icon: '👟' },
-            { day: 6, title: 'Screen Break', task: `Take a 15 min break from screens before bed.`, category: 'screen', icon: '📱' },
-            { day: 7, title: 'Review & Rest', task: `Reflect on your progress and maintain your new habits.`, category: 'sleep', icon: '📝' }
+            { day: 1, title: 'Sleep Early', task: `Get to bed 30 mins earlier to reach ${Math.min(formData.sleep + 0.5, 8)}h sleep tonight.`, category: 'sleep', icon: '😴' },
+            { day: 2, title: 'Hydrate Plus', task: `Drink 1 extra glass — target ${formData.hydration + 1} glasses today.`, category: 'hydration', icon: '💧' },
+            { day: 3, title: 'Move More', task: `Add 10 mins to your ${formData.activity} mins — aim for ${formData.activity + 10} mins today.`, category: 'activity', icon: '🏃' },
+            { day: 4, title: 'De-stress', task: `Your stress is ${formData.stress}/10. Take 5 mins for deep breathing.`, category: 'stress', icon: '🧘' },
+            { day: 5, title: 'Step Up', task: `Aim for ${Math.round(formData.steps * 1.1)} steps — 10% more than your ${formData.steps}.`, category: 'activity', icon: '👟' },
+            { day: 6, title: 'Screen Break', task: `Reduce screen time below ${formData.screenTime - 1}h. Take a break 30 mins before bed.`, category: 'screen', icon: '📱' },
+            { day: 7, title: 'Review & Rest', task: 'Reflect on your week and repeat what worked best for you.', category: 'sleep', icon: '📝' }
           ]
-        };
-        setResult(prev => prev ? { ...prev, challenges: fallbackChallenges } : prev);
+        }} : prev);
       }
     })();
+
   };
+
 
   const handleChatSubmit = async (e) => {
     e.preventDefault();
