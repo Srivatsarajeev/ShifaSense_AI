@@ -235,94 +235,141 @@ def analyze():
 def predict_risk():
     if request.method == 'OPTIONS':
         return jsonify({}), 200
-        
+
     input_data = request.json
     try:
-        user_age = input_data.get('Age', 30)
-        user_sleep = input_data.get('Sleep_Hours', 7)
-        user_water = input_data.get('Water_Liters', 2)
-        user_activity = input_data.get('Activity_Mins', 30)
-        user_stress = input_data.get('Stress_Level', 5)
-        user_bmi = input_data.get('BMI', 24)
-        
-        user_smoking = input_data.get('Smoking_Habit', 'Non-smoker')
-        user_food = input_data.get('Food_Habits', 'Mostly Home Cooked')
-        
-        # Encoding logic matching main.py
-        food_encoded = 1 if user_food == "Mostly Junk Food" else 0
-        smoking_map = {"Non-smoker": 0, "Occasional": 1, "Regular": 2}
-        smoking_encoded = smoking_map.get(user_smoking, 0)
-        
-        # Exact coefficients from model.pkl LinearRegression
-        # Intercept: 10.0
-        # Age: 0.1, Sleep: -0.5, Water: -0.2, Activity: -0.01, Stress: 2.0, BMI: 0.5, Food: 5.0, Smoking: 10.0
-        risk_score = 10.0 \
-                     + (0.1 * user_age) \
-                     + (-0.5 * user_sleep) \
-                     + (-0.2 * user_water) \
-                     + (-0.01 * user_activity) \
-                     + (2.0 * user_stress) \
-                     + (0.5 * user_bmi) \
-                     + (5.0 * food_encoded) \
-                     + (10.0 * smoking_encoded)
-            
-        risk_score = max(0, min(100, risk_score))
-        
-        # Calculate display fields
-        health_score = round(100 - risk_score, 1)
-        risk_label = "High Risk Pattern" if risk_score > 70 else ("Moderate Variance" if risk_score > 40 else "Optimal Status")
-        risk_color = "#EF4444" if risk_score > 70 else ("#F59E0B" if risk_score > 40 else "#10B981")
-        
-        # Generate dynamic insights based on risk factors
-        insights = []
-        if risk_score > 70:
-            insights = [
-                "Immediate cardiovascular stabilization protocol recommended.",
-                "Metabolic markers indicate high systemic stress levels.",
-                "Neural recovery cycles significantly impaired by current habits."
-            ]
-        elif risk_score > 40:
-            insights = [
-                "Moderate physiological variance detected in recovery data.",
-                "Optimizing hydration and sleep hygiene will stabilize baseline.",
-                "Activity magnitude is below recommended longevity benchmarks."
-            ]
-        else:
-            insights = [
-                "Bio-sync integrity verified across all core metrics.",
-                "Circadian rhythm analysis suggests optimal recovery patterns.",
-                "Metabolic hydration baseline within high efficiency range."
-            ]
+        user_age      = float(input_data.get('Age', 30))
+        user_sleep    = float(input_data.get('Sleep_Hours', 7))
+        user_water    = float(input_data.get('Water_Liters', 2))   # already in liters
+        user_activity = float(input_data.get('Activity_Mins', 30))
+        user_stress   = float(input_data.get('Stress_Level', 5))
+        user_bmi      = float(input_data.get('BMI', 24))
+        user_smoking  = input_data.get('Smoking_Habit', 'Non-smoker')
+        user_food     = input_data.get('Food_Habits', 'Mostly Home Cooked')
 
-        # Save clinical record
+        # ── If dataset is loaded, use real KNN prediction ──
+        if DATA and STATS:
+            user_vec = {
+                'Age':          normalize(user_age,      'Age'),
+                'Sleep_Hours':  normalize(user_sleep,    'Sleep_Hours'),
+                'Water_Liters': normalize(user_water,    'Water_Liters'),
+                'Activity_Mins':normalize(user_activity, 'Activity_Mins'),
+                'Stress_Level': normalize(user_stress,   'Stress_Level'),
+                'BMI':          normalize(user_bmi,      'BMI'),
+            }
+            weights = {
+                'Age': 0.08, 'Sleep_Hours': 0.28, 'Water_Liters': 0.14,
+                'Activity_Mins': 0.20, 'Stress_Level': 0.25, 'BMI': 0.05
+            }
+            distances = []
+            for i, row in enumerate(DATA):
+                dist_sq = sum(
+                    weights[f] * (user_vec[f] - normalize(row[f], f)) ** 2
+                    for f in FEATURES
+                )
+                distances.append((math.sqrt(dist_sq), i))
+            distances.sort(key=lambda x: x[0])
+            neighbors = [DATA[idx] for _, idx in distances[:20]]
+
+            risk_scores = [n['Disease_Risk_Percentage'] for n in neighbors]
+            risk_score  = sum(risk_scores) / len(risk_scores)
+
+            # Lifestyle penalty (not in CSV features)
+            if user_smoking == 'Regular':   risk_score = min(100, risk_score + 8)
+            elif user_smoking == 'Occasional': risk_score = min(100, risk_score + 4)
+            if user_food == 'Mostly Junk Food': risk_score = min(100, risk_score + 5)
+        else:
+            # Fallback formula if CSV not loaded
+            food_enc    = 1 if user_food == "Mostly Junk Food" else 0
+            smoke_enc   = {"Non-smoker": 0, "Occasional": 1, "Regular": 2}.get(user_smoking, 0)
+            risk_score  = max(0, min(100,
+                10.0
+                + 0.10 * user_age
+                - 0.50 * user_sleep
+                - 0.20 * user_water
+                - 0.01 * user_activity
+                + 2.00 * user_stress
+                + 0.50 * user_bmi
+                + 5.00 * food_enc
+                + 10.0 * smoke_enc
+            ))
+
+        risk_score   = round(max(0, min(100, risk_score)), 1)
+        health_score = round(100 - risk_score, 1)
+
+        risk_label = ("High Risk Pattern" if risk_score > 70
+                      else "Moderate Risk" if risk_score > 40
+                      else "Healthy")
+        risk_color = ("#EF4444" if risk_score > 70
+                      else "#F59E0B" if risk_score > 40
+                      else "#10B981")
+
+        # ── Real personalised coaching from actual numbers ──
+        lines = []
+
+        # Sleep
+        if user_sleep < 5:
+            lines.append(f"Critical: Your sleep of {user_sleep}h is severely below the 7-8h target — this alone raises your disease risk significantly. Make sleep your #1 priority tonight.")
+        elif user_sleep < 7:
+            lines.append(f"Your sleep of {user_sleep}h is below the recommended 7-8h. Try going to bed 30 minutes earlier each night to build a healthier sleep cycle.")
+        else:
+            lines.append(f"Great job on {user_sleep}h of sleep — you are within the healthy 7-8h target. Maintain a consistent bedtime to lock in this habit.")
+
+        # Stress
+        if user_stress >= 8:
+            lines.append(f"Your stress level of {user_stress}/10 is very high. Practice 10 minutes of deep breathing or a short walk daily to bring it below 6.")
+        elif user_stress >= 6:
+            lines.append(f"Stress at {user_stress}/10 is elevated. Consider short mindfulness breaks or reducing screen time in the evening.")
+        else:
+            lines.append(f"Stress is well-managed at {user_stress}/10. Keep using your current coping strategies.")
+
+        # Hydration (water_liters)
+        water_glasses = round(user_water / 0.25)
+        if user_water < 1.5:
+            lines.append(f"Hydration is critically low at {water_glasses} glasses. Aim for at least 8 glasses (2L) per day — dehydration directly worsens your risk score.")
+        elif user_water < 2.0:
+            lines.append(f"At {water_glasses} glasses per day, you are under-hydrated. Carry a 1L bottle and refill it twice to hit your daily target.")
+
+        # Activity
+        if user_activity < 15:
+            lines.append(f"Physical activity of {int(user_activity)} mins/day is very low. Even a 20-minute walk 5 days a week will meaningfully lower your risk score.")
+        elif user_activity < 30:
+            lines.append(f"Activity of {int(user_activity)} mins/day is below the 30-min guideline. Add a short workout or brisk walk to your daily routine.")
+
+        # Summary sentence
+        summary = " ".join(lines) if lines else (
+            f"Your health score is {health_score}/100 (risk: {risk_score}%). "
+            f"Your key inputs — sleep {user_sleep}h, stress {user_stress}/10, "
+            f"activity {int(user_activity)} mins, water {water_glasses} glasses — "
+            f"show {'concerning patterns that need attention' if risk_score > 50 else 'mostly healthy trends. Keep it up'}."
+        )
+
         import datetime
-        clinical_record = {
-            "id": len(RECENT_ANALYSES) + 1,
-            "name": input_data.get('name', 'Anonymous'),
-            "age": user_age,
-            "gender": input_data.get('gender', 'Unknown'),
-            "bmi": user_bmi,
-            "sleep": user_sleep,
-            "activity": user_activity,
+        RECENT_ANALYSES.append({
+            "id":          len(RECENT_ANALYSES) + 1,
+            "age":         user_age,
+            "sleep":       user_sleep,
+            "activity":    user_activity,
             "healthScore": health_score,
-            "riskLabel": risk_label,
-            "riskColor": risk_color,
-            "timestamp": datetime.datetime.now().strftime("%I:%M %p, %b %d")
-        }
-        RECENT_ANALYSES.append(clinical_record)
+            "riskLabel":   risk_label,
+            "riskColor":   risk_color,
+            "timestamp":   datetime.datetime.now().strftime("%I:%M %p, %b %d")
+        })
 
         return jsonify({
-            "score": health_score,
-            "predicted_risk_percentage": round(risk_score, 1),
-            "risk_level": risk_label,
-            "ai_coaching": ai_coaching,
-            "insights": insights,
-            "status": "success"
+            "predicted_risk_percentage": risk_score,
+            "score":       health_score,
+            "risk_level":  risk_label,
+            "ai_coaching": summary,
+            "status":      "success"
         })
+
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 400
+
+
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
